@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { DollarSign, Activity, Database, Clock, TrendingUp, Zap } from 'lucide-react';
-import { getStats, getAnalytics } from '@/lib/api';
-import { format } from 'date-fns';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { DollarSign, Activity, Clock, Database, TrendingUp, Zap } from 'lucide-react';
+import { getStats, getAnalytics } from '../lib/api';
 
 export default function AnalyticsDashboard() {
   const [stats, setStats] = useState(null);
@@ -13,7 +12,7 @@ export default function AnalyticsDashboard() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 30000); // Refresh every 30s
+    const interval = setInterval(loadData, 10000); // Refresh every 10s
     return () => clearInterval(interval);
   }, []);
 
@@ -27,33 +26,23 @@ export default function AnalyticsDashboard() {
       setAnalytics(analyticsData);
       setLoading(false);
     } catch (error) {
-      console.error('Failed to load analytics:', error);
+      console.error('Failed to load data:', error);
       setLoading(false);
     }
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading analytics...</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
-
-  // Prepare chart data
-  const chartData = analytics?.logs.slice(-10).map((log, idx) => ({
-    name: `Q${idx + 1}`,
-    responseTime: log.responseTime,
-    time: format(new Date(log.timestamp), 'HH:mm'),
-  })) || [];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
-        <h1 className="text-3xl font-bold">Vegah Analytics Dashboard</h1>
-        <p className="text-sm opacity-90 mt-1">Real-time cost tracking & API monitoring</p>
-      </div>
-
-      {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Cost */}
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <MetricCard
           title="Total Cost"
           value="$0.00"
@@ -61,31 +50,25 @@ export default function AnalyticsDashboard() {
           icon={<DollarSign className="w-6 h-6" />}
           color="green"
         />
-
-        {/* Total Queries */}
         <MetricCard
           title="Total Queries"
           value={analytics?.totalQueries || 0}
-          subtitle={`${analytics?.usagePercent}% of daily limit`}
+          subtitle={`${analytics?.groqUsagePercent}% of daily limit`}
           icon={<Activity className="w-6 h-6" />}
           color="blue"
         />
-
-        {/* Documents Indexed */}
         <MetricCard
-          title="Documents Indexed"
-          value={stats?.documents_indexed || 0}
-          subtitle={stats?.retriever_status?.vector === 'active' ? 'Active' : 'Inactive'}
-          icon={<Database className="w-6 h-6" />}
-          color="purple"
-        />
-
-        {/* Avg Response Time */}
-        <MetricCard
-          title="Avg Response Time"
+          title="Avg Response"
           value={`${analytics?.avgResponseTime}ms`}
           subtitle="Per query"
           icon={<Clock className="w-6 h-6" />}
+          color="purple"
+        />
+        <MetricCard
+          title="Documents"
+          value={stats?.documents_indexed || 0}
+          subtitle="Indexed"
+          icon={<Database className="w-6 h-6" />}
           color="orange"
         />
       </div>
@@ -94,76 +77,95 @@ export default function AnalyticsDashboard() {
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-bold mb-4 flex items-center">
           <DollarSign className="w-5 h-5 mr-2 text-green-600" />
-          Cost Breakdown
+          Cost Tracking
         </h2>
         <div className="space-y-3">
-          <CostRow label="GCP e2-micro VM" value="$0.00" status="Always Free" />
-          <CostRow label="Groq API (Llama 3.1 8B)" value="$0.00" status={`${analytics?.totalQueries || 0}/${analytics?.groqLimit} queries today`} />
-          <CostRow label="ChromaDB Vector Storage" value="$0.00" status="Self-hosted" />
-          <CostRow label="Vercel Frontend Hosting" value="$0.00" status="Free tier" />
-          <div className="pt-3 border-t-2 border-gray-200">
-            <CostRow label="Total Monthly Cost" value="$0.00" status="✅ Permanent" bold />
+          <CostRow label="GCP e2-micro VM" cost="$0.00" usage="Always Free Tier" />
+          <CostRow label="Groq API" cost="$0.00" usage={`${analytics?.totalQueries || 0} / ${analytics?.groqDailyLimit} calls today`} />
+          <CostRow label="ChromaDB Storage" cost="$0.00" usage="Self-hosted" />
+          <CostRow label="Vercel Hosting" cost="$0.00" usage="Free tier" />
+          <div className="pt-3 border-t-2">
+            <CostRow label="Total Monthly Cost" cost="$0.00" usage="✅ Permanent" bold />
           </div>
         </div>
       </div>
 
-      {/* Response Time Chart */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold mb-4 flex items-center">
-          <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-          Query Response Time (Last 10)
-        </h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis label={{ value: 'Time (ms)', angle: -90, position: 'insideLeft' }} />
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="responseTime" stroke="#3b82f6" strokeWidth={2} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* System Status */}
+      {/* API Usage Tracking */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-bold mb-4 flex items-center">
           <Zap className="w-5 h-5 mr-2 text-yellow-600" />
-          System Status
+          API Usage Tracking
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StatusCard
-            label="BM25 Retriever"
-            status={stats?.retriever_status?.bm25 || 'inactive'}
-          />
-          <StatusCard
-            label="Vector Search"
-            status={stats?.retriever_status?.vector || 'inactive'}
-          />
-          <StatusCard
-            label="LLM (Groq)"
-            status="active"
-          />
-        </div>
-      </div>
-
-      {/* API Limits */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold mb-4">Groq API Usage</h2>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span>Daily Queries</span>
-            <span className="font-bold">{analytics?.totalQueries || 0} / {analytics?.groqLimit}</span>
+        
+        {/* Groq API Limit Progress */}
+        <div className="mb-6">
+          <div className="flex justify-between mb-2">
+            <span className="font-medium">Groq API Calls (Daily Limit)</span>
+            <span className="font-bold">{analytics?.totalQueries || 0} / {analytics?.groqDailyLimit}</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className="w-full bg-gray-200 rounded-full h-4">
             <div
-              className="bg-blue-600 h-3 rounded-full transition-all"
-              style={{ width: `${analytics?.usagePercent || 0}%` }}
+              className={`h-4 rounded-full transition-all ${
+                parseFloat(analytics?.groqUsagePercent) > 80 ? 'bg-red-500' : 'bg-blue-600'
+              }`}
+              style={{ width: `${analytics?.groqUsagePercent}%` }}
             />
           </div>
-          <p className="text-sm text-gray-600">
-            {analytics?.groqLimit - (analytics?.totalQueries || 0)} queries remaining today
+          <p className="text-sm text-gray-600 mt-1">
+            {analytics?.groqCallsRemaining} calls remaining today
           </p>
+        </div>
+
+        {/* Query Chart */}
+        {analytics?.chartData && analytics.chartData.length > 0 && (
+          <div>
+            <h3 className="font-semibold mb-3">Queries by Hour</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={analytics.chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="hour" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="queries" fill="#3b82f6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      {/* Recent Queries */}
+      {analytics?.recentQueries && analytics.recentQueries.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-bold mb-4 flex items-center">
+            <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+            Recent Queries
+          </h2>
+          <div className="space-y-2">
+            {analytics.recentQueries.map((q, idx) => (
+              <div key={idx} className="flex justify-between items-center border-b pb-2">
+                <div className="flex-1">
+                  <p className="text-sm font-medium truncate">{q.query}</p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(q.timestamp).toLocaleTimeString()}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-blue-600">{q.responseTime}ms</p>
+                  <p className="text-xs text-gray-500">{q.documentsRetrieved} docs</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* System Status */}
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-bold mb-4">System Status</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <StatusCard label="BM25 Retriever" status={stats?.retriever_status?.bm25 || 'inactive'} />
+          <StatusCard label="Vector Search" status={stats?.retriever_status?.vector || 'inactive'} />
+          <StatusCard label="LLM (Groq)" status="active" />
         </div>
       </div>
     </div>
@@ -172,7 +174,7 @@ export default function AnalyticsDashboard() {
 
 // Helper Components
 function MetricCard({ title, value, subtitle, icon, color }) {
-  const colorClasses = {
+  const colors = {
     green: 'bg-green-100 text-green-600',
     blue: 'bg-blue-100 text-blue-600',
     purple: 'bg-purple-100 text-purple-600',
@@ -183,9 +185,7 @@ function MetricCard({ title, value, subtitle, icon, color }) {
     <div className="bg-white p-6 rounded-lg shadow">
       <div className="flex items-center justify-between mb-2">
         <p className="text-sm text-gray-600">{title}</p>
-        <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
-          {icon}
-        </div>
+        <div className={`p-2 rounded-lg ${colors[color]}`}>{icon}</div>
       </div>
       <p className="text-3xl font-bold">{value}</p>
       <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
@@ -193,13 +193,13 @@ function MetricCard({ title, value, subtitle, icon, color }) {
   );
 }
 
-function CostRow({ label, value, status, bold }) {
+function CostRow({ label, cost, usage, bold }) {
   return (
-    <div className={`flex justify-between items-center ${bold ? 'font-bold text-lg' : ''}`}>
-      <span className="text-gray-700">{label}</span>
+    <div className={`flex justify-between ${bold ? 'font-bold text-lg' : ''}`}>
+      <span>{label}</span>
       <div className="text-right">
-        <div className="text-green-600">{value}</div>
-        <div className="text-xs text-gray-500">{status}</div>
+        <div className="text-green-600">{cost}</div>
+        <div className="text-xs text-gray-500">{usage}</div>
       </div>
     </div>
   );

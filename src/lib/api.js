@@ -2,6 +2,10 @@ import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://136.112.100.84:8000';
 
+console.log('🌐 API Configuration loaded');
+console.log('🌐 API_URL:', API_URL);
+console.log('🌐 Environment:', process.env.NODE_ENV);
+
 export const api = axios.create({
   baseURL: API_URL,
   timeout: 60000,
@@ -12,8 +16,21 @@ export const api = axios.create({
 
 // Health check
 export const getHealth = async () => {
-  const response = await api.get('/health');
-  return response.data;
+  console.log('📡 Calling health endpoint:', `${API_URL}/health`);
+  try {
+    const response = await api.get('/health');
+    console.log('✅ Health response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Health check error:', error.message);
+    if (error.response) {
+      console.error('❌ Response status:', error.response.status);
+      console.error('❌ Response data:', error.response.data);
+    } else if (error.request) {
+      console.error('❌ No response received:', error.request);
+    }
+    throw error;
+  }
 };
 
 // Get stats
@@ -79,9 +96,8 @@ export const getAnalytics = () => {
     ? logs.reduce((sum, log) => sum + log.responseTime, 0) / logs.length
     : 0;
   
-  // Calculate cost (Groq is free but track for monitoring)
-  const estimatedCost = 0; // $0 with free tier
-  const groqLimit = 14400; // Daily limit
+  const estimatedCost = 0;
+  const groqLimit = 14400;
   const usagePercent = (totalQueries % groqLimit) / groqLimit * 100;
   
   return {

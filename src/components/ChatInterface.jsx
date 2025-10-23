@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2 } from 'lucide-react';
-import { queryRAG, saveQueryLog } from '@/lib/api';
+import { queryRAG, saveQueryLog } from '../lib/api';
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState([
