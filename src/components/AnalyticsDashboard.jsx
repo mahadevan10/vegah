@@ -53,7 +53,7 @@ export default function AnalyticsDashboard() {
         <MetricCard
           title="Total Queries"
           value={analytics?.totalQueries || 0}
-          subtitle={`${analytics?.groqUsagePercent}% of daily limit`}
+          subtitle={`${analytics?.usagePercent}% of daily limit`}
           icon={<Activity className="w-6 h-6" />}
           color="blue"
         />
@@ -101,14 +101,14 @@ export default function AnalyticsDashboard() {
         <div className="mb-6">
           <div className="flex justify-between mb-2">
             <span className="font-medium">Groq API Calls (Daily Limit)</span>
-            <span className="font-bold">{analytics?.totalQueries || 0} / {analytics?.groqDailyLimit}</span>
+            <span className="font-bold">{analytics?.totalQueries || 0} / {analytics?.groqLimit}</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-4">
             <div
               className={`h-4 rounded-full transition-all ${
-                parseFloat(analytics?.groqUsagePercent) > 80 ? 'bg-red-500' : 'bg-blue-600'
+                parseFloat(analytics?.usagePercent) > 80 ? 'bg-red-500' : 'bg-blue-600'
               }`}
-              style={{ width: `${analytics?.groqUsagePercent}%` }}
+              style={{ width: `${analytics?.usagePercent}%` }}
             />
           </div>
           <p className="text-sm text-gray-600 mt-1">
