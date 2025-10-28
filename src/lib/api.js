@@ -1,25 +1,61 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://136.112.100.84:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-console.log('🌐 API Configuration loaded');
-console.log('🌐 API_URL:', API_URL);
-console.log('🌐 Environment:', process.env.NODE_ENV);
+const defaultHeaders = {
+  'Content-Type': 'application/json',
+};
+
 
 export const api = axios.create({
   baseURL: API_URL,
   timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
+});
+
+// Bypass ngrok abuse-prevention interstitial on every request
+api.interceptors.request.use((config) => {
+  try {
+    const base = new URL(config.baseURL || API_URL || '');
+    const isNgrok =
+      base.hostname.includes('ngrok-free.app') || base.hostname.includes('ngrok.io');
+
+    if (isNgrok) {
+      // Always send the special header
+      config.headers = {
+        ...config.headers,
+        'ngrok-skip-browser-warning': 'true',
+      };
+
+      // Ensure the bypass query param is present
+      const fullBase = new URL(config.baseURL || API_URL);
+      const url = new URL(config.url || '', fullBase);
+      url.searchParams.set('ngrok-skip-browser-warning', 'true');
+
+      // Preserve any existing params from axios config
+      if (config.params) {
+        Object.entries(config.params).forEach(([k, v]) => {
+          if (v !== undefined && v !== null) url.searchParams.set(k, v);
+        });
+        config.params = undefined; // move params into the URL we set
+      }
+
+      config.url = url.toString();
+      config.baseURL = ''; // use the absolute URL we just built
+    }
+  } catch {
+    // no-op
+  }
+  return config;
 });
 
 // Health check
 export const getHealth = async () => {
-  console.log('📡 Calling health endpoint:', `${API_URL}/health`);
   try {
     const response = await api.get('/health');
-    console.log('✅ Health response:', response.data);
     return response.data;
   } catch (error) {
     console.error('❌ Health check error:', error.message);
@@ -108,4 +144,26 @@ export const getAnalytics = () => {
     usagePercent: usagePercent.toFixed(1),
     logs,
   };
+};
+
+// Update all fetch calls to include this header
+export const checkHealth = async () => {
+  const response = await fetch(`${API_URL}/health`, {
+    headers: defaultHeaders,
+  });
+  return response.json();
+};
+
+export const uploadFile = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await fetch(`${API_URL}/upload`, {
+    method: 'POST',
+    headers: {
+      'ngrok-skip-browser-warning': 'true',
+    },
+    body: formData,
+  });
+  return response.json();
 };

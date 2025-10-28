@@ -4,6 +4,14 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { queryRAG, saveQueryLog } from '../lib/api';
 
+async function deleteAllEmbeddings() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/cleanup`, {
+    method: 'POST', // <-- Change from DELETE to POST
+  });
+  if (!res.ok) throw new Error('Failed to delete embeddings');
+  return res.json();
+}
+
 export default function ChatInterface() {
   const [messages, setMessages] = useState([
     {
@@ -67,9 +75,25 @@ export default function ChatInterface() {
   return (
     <div className="flex flex-col h-[600px] border rounded-lg bg-white shadow-lg">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-lg">
-        <h2 className="text-xl font-bold">Vegah Chat Assistant</h2>
-        <p className="text-sm opacity-90">Ultra-Low-Cost RAG • $0/month</p>
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-lg flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold">Vegah Chat Assistant</h2>
+          <p className="text-sm opacity-90">Ultra-Low-Cost RAG • $0/month</p>
+        </div>
+        <button
+          onClick={async () => {
+            try {
+              await deleteAllEmbeddings();
+              alert('All embeddings deleted!');
+            } catch (e) {
+              alert('Failed to delete embeddings');
+            }
+          }}
+          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm ml-4"
+          type="button"
+        >
+          Delete All Embeddings
+        </button>
       </div>
 
       {/* Messages */}
