@@ -9,7 +9,7 @@ const defaultHeaders = {
 
 export const api = axios.create({
   baseURL: API_URL,
-  timeout: 60000,
+  timeout: 120000,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -91,10 +91,11 @@ export const uploadDocuments = async (files) => {
 };
 
 // Query RAG
-export const queryRAG = async (query, topK = 5) => {
+export const queryRAG = async (query, topK = 5, sessionId = 'default') => {
   const response = await api.post('/query', {
     query,
     top_k: topK,
+    session_id: sessionId,
   });
   return response.data;
 };

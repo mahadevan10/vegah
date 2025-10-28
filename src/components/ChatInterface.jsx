@@ -21,6 +21,17 @@ export default function ChatInterface() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // NEW: Generate a stable sessionId once per chat session
+  const [sessionId] = useState(() => {
+    try {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+    } catch {}
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  });
+
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -43,7 +54,8 @@ export default function ChatInterface() {
     const startTime = Date.now();
 
     try {
-      const response = await queryRAG(userMessage, 5);
+      // Pass sessionId to backend
+      const response = await queryRAG(userMessage, 5, sessionId);
       const responseTime = Date.now() - startTime;
 
       setMessages(prev => [
@@ -56,7 +68,6 @@ export default function ChatInterface() {
         },
       ]);
 
-      // Save to analytics
       saveQueryLog(userMessage, response.answer, responseTime);
     } catch (error) {
       setMessages(prev => [
