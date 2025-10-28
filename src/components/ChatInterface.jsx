@@ -6,7 +6,7 @@ import { queryRAG, saveQueryLog } from '../lib/api';
 
 async function deleteAllEmbeddings() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/cleanup`, {
-    method: 'POST', // <-- Change from DELETE to POST
+    method: 'POST',
   });
   if (!res.ok) throw new Error('Failed to delete embeddings');
   return res.json();
@@ -118,9 +118,17 @@ export default function ChatInterface() {
                 <div className="mt-2 pt-2 border-t border-gray-300 text-xs">
                   <p className="font-semibold mb-1">Sources:</p>
                   {msg.sources.map((source, i) => (
-                    <p key={i} className="text-gray-600">
-                      • {source.source} (Chunk {source.chunk_id})
-                    </p>
+                    <div key={i} className="mb-2">
+                      <p className="text-gray-600 font-semibold">
+                        {source.source}
+                        {source.page_number !== undefined && source.page_number !== null
+                          ? ` — Page ${source.page_number}`
+                          : ''}
+                      </p>
+                      <div className="bg-gray-50 rounded p-2 text-gray-700">
+                        {source.content}
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
