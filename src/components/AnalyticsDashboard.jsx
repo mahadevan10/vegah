@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DollarSign, Activity, Clock, Database, TrendingUp, Zap } from 'lucide-react';
-import { getStats, getAnalytics } from '../lib/api';
+
+const backendUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AnalyticsDashboard() {
   const [stats, setStats] = useState(null);
@@ -12,18 +12,16 @@ export default function AnalyticsDashboard() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 10000); // Refresh every 10s
+    const interval = setInterval(loadData, 10000);
     return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {
     try {
-      const [statsData, analyticsData] = await Promise.all([
-        getStats(),
-        Promise.resolve(getAnalytics()),
-      ]);
-      setStats(statsData);
-      setAnalytics(analyticsData);
+      const statsRes = await fetch(`${backendUrl}/health`);
+      const analyticsRes = await fetch(`${backendUrl}/analytics`);
+      setStats(await statsRes.json());
+      setAnalytics(await analyticsRes.json());
       setLoading(false);
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -44,16 +42,16 @@ export default function AnalyticsDashboard() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <MetricCard
-          title="Total Cost"
-          value="$0.00"
-          subtitle="Forever free"
+          title="Total Cost (SambaNova)"
+          value={`$${analytics?.sambanovaCost?.toFixed(2) || '0.00'}`}
+          subtitle="Projected (Prod)"
           icon={<DollarSign className="w-6 h-6" />}
           color="green"
         />
         <MetricCard
           title="Total Queries"
           value={analytics?.totalQueries || 0}
-          subtitle={`${analytics?.usagePercent}% of daily limit`}
+          subtitle="All time"
           icon={<Activity className="w-6 h-6" />}
           color="blue"
         />
@@ -73,64 +71,33 @@ export default function AnalyticsDashboard() {
         />
       </div>
 
-      {/* Cost Breakdown */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold mb-4 flex items-center">
-          <DollarSign className="w-5 h-5 mr-2 text-green-600" />
-          Cost Tracking
-        </h2>
-        <div className="space-y-3">
-          <CostRow label="GCP e2-micro VM" cost="$0.00" usage="Always Free Tier" />
-          <CostRow label="Groq API" cost="$0.00" usage={`${analytics?.totalQueries || 0} / ${analytics?.groqDailyLimit} calls today`} />
-          <CostRow label="ChromaDB Storage" cost="$0.00" usage="Self-hosted" />
-          <CostRow label="Vercel Hosting" cost="$0.00" usage="Free tier" />
-          <div className="pt-3 border-t-2">
-            <CostRow label="Total Monthly Cost" cost="$0.00" usage="✅ Permanent" bold />
-          </div>
-        </div>
-      </div>
-
-      {/* API Usage Tracking */}
+      {/* Token Usage */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-bold mb-4 flex items-center">
           <Zap className="w-5 h-5 mr-2 text-yellow-600" />
-          API Usage Tracking
+          LLM Token Usage & Projected Cost (SambaNova)
         </h2>
-        
-        {/* Groq API Limit Progress */}
-        <div className="mb-6">
-          <div className="flex justify-between mb-2">
-            <span className="font-medium">Groq API Calls (Daily Limit)</span>
-            <span className="font-bold">{analytics?.totalQueries || 0} / {analytics?.groqLimit}</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-4">
-            <div
-              className={`h-4 rounded-full transition-all ${
-                parseFloat(analytics?.usagePercent) > 80 ? 'bg-red-500' : 'bg-blue-600'
-              }`}
-              style={{ width: `${analytics?.usagePercent}%` }}
-            />
-          </div>
-          <p className="text-sm text-gray-600 mt-1">
-            {analytics?.groqCallsRemaining} calls remaining today
-          </p>
-        </div>
-
-        {/* Query Chart */}
-        {analytics?.chartData && analytics.chartData.length > 0 && (
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <h3 className="font-semibold mb-3">Queries by Hour</h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={analytics.chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="hour" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="queries" fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="font-semibold">Input Tokens</div>
+            <div>{analytics?.totalInputTokens?.toLocaleString() || 0}</div>
           </div>
-        )}
+          <div>
+            <div className="font-semibold">Output Tokens</div>
+            <div>{analytics?.totalOutputTokens?.toLocaleString() || 0}</div>
+          </div>
+          <div>
+            <div className="font-semibold">Total Tokens</div>
+            <div>{analytics?.totalTokens?.toLocaleString() || 0}</div>
+          </div>
+          <div>
+            <div className="font-semibold">Projected Cost</div>
+            <div className="text-green-700 font-bold">${analytics?.sambanovaCost?.toFixed(2) || '0.00'}</div>
+          </div>
+        </div>
+        <div className="mt-4 text-xs text-gray-500">
+          <b>Pricing:</b> $81.20 per 121.6M tokens (SambaNova production tier)
+        </div>
       </div>
 
       {/* Recent Queries */}
@@ -152,22 +119,13 @@ export default function AnalyticsDashboard() {
                 <div className="text-right">
                   <p className="text-sm font-bold text-blue-600">{q.responseTime}ms</p>
                   <p className="text-xs text-gray-500">{q.documentsRetrieved} docs</p>
+                  <p className="text-xs text-gray-500">{q.inputTokens} in / {q.outputTokens} out</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
       )}
-
-      {/* System Status */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold mb-4">System Status</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StatusCard label="BM25 Retriever" status={stats?.retriever_status?.bm25 || 'inactive'} />
-          <StatusCard label="Vector Search" status={stats?.retriever_status?.vector || 'inactive'} />
-          <StatusCard label="LLM (Groq)" status="active" />
-        </div>
-      </div>
     </div>
   );
 }

@@ -45,7 +45,7 @@ export default function Home() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Vegah</h1>
-                <p className="text-sm text-gray-600">Ultra-Low-Cost RAG System</p>
+                <p className="text-sm text-gray-600">Ultra-Low-Cost RAG System (NVIDIA NIM Free API)</p>
               </div>
             </div>
             
@@ -108,11 +108,14 @@ export default function Home() {
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div>
               <p className="font-semibold">Vegah RAG System</p>
-              <p>Deployed on GCP e2-micro • Powered by Groq Llama 3.1 8B</p>
+              <p>
+                Deployed on GCP e2-micro • Powered by NVIDIA NIM Free API<br/>
+                <span className="text-blue-700 font-semibold">Production: SambaNova Infrastructure ($81.20/mo for 60k queries)</span>
+              </p>
             </div>
             <div className="text-right">
-              <p className="font-bold text-green-600">Monthly Cost: $0</p>
-              <p className="text-xs">Forever free tier</p>
+              <p className="font-bold text-green-600">Monthly Cost: $0 (Dev) / $81.20 (Prod)</p>
+              <p className="text-xs">Free for development, enterprise-ready with SambaNova</p>
             </div>
           </div>
         </div>
@@ -130,7 +133,8 @@ function OverviewTab() {
           Production-Ready RAG at $0/month
         </h2>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Hybrid search architecture combining BM25 keyword filtering with vector semantic search, powered by Groq's free LLM API
+          Hybrid search architecture combining BM25 keyword filtering with vector semantic search, powered by NVIDIA NIM Free LLM API.<br/>
+          <span className="font-semibold text-blue-700">In production, can upgrade to SambaNova Infrastructure for enterprise scale and reliability.</span>
         </p>
       </div>
 
@@ -169,7 +173,7 @@ function OverviewTab() {
           <Feature
             icon="💬"
             title="Interactive Chat"
-            description="Ask questions and get AI-powered answers with source citations"
+            description="Ask questions and get AI-powered answers with source citations (NVIDIA NIM Free API)"
           />
           <Feature
             icon="📊"
@@ -221,9 +225,9 @@ function OverviewTab() {
             detail="Always Free Tier"
           />
           <CostItem
-            service="Groq API with Llama 3.1 8B"
-            cost="$0.00"
-            detail="14,400 requests/day free"
+            service="SambaNova LLM Inference"
+            cost="$0.001128 per query"
+            detail="cost per user who does ~1,000 queries/day = $3-4/month each"
           />
           <CostItem
             service="ChromaDB Vector Database"
@@ -238,8 +242,8 @@ function OverviewTab() {
           <div className="pt-4 border-t-2 border-gray-200">
             <CostItem
               service="Total Monthly Operational Cost"
-              cost="$0.00"
-              detail="✅ Permanent free tier"
+              cost="$1000 - $2000 (production)"
+              detail="for 15,000 queries/day (~450,000/month)"
               bold
             />
           </div>
