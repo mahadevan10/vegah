@@ -135,7 +135,7 @@ export const getUploadStatus = async (jobId) => {
  * Response format:
  * {
  *   answer: string,
- *   sources: Array<{source: string, page: number, doc_id: string, preview: string}>,
+ *   sources: Array<{filename: string, page: number | null, is_summary: boolean, preview: string}>,
  *   agent_reasoning: string[], // Step-by-step agent thoughts
  *   tools_used: string[], // Tools the agent used (e.g., "list_all_documents", "search_specific_page")
  *   context_used: string // Summary of context used

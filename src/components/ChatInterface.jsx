@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, Brain, ChevronDown, ChevronUp, Wrench, FileText, Bug } from 'lucide-react';
 import { queryRAG, saveQueryLog } from '../lib/api';
+import ReactMarkdown from 'react-markdown';
 
 async function deleteAllEmbeddings() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/clear`, {
@@ -131,17 +132,22 @@ function SourcesDisplay({ sources }) {
       
       {expanded && (
         <div className="space-y-2">
-          {sources.map((source, i) => (
+          {sources.map((source, i) => {
+            const displayName = source.filename || source.source || 'Unknown document';
+            const isSummary = Boolean(source.is_summary);
+            const pageLabel =
+              isSummary
+                ? <span className="ml-2 text-blue-600 font-bold">Entire Document</span>
+                : source.page !== undefined && source.page !== null && (
+                    <span className="ml-2 text-blue-600 font-bold">Page {source.page}</span>
+                  );
+
+            return (
             <div key={i} className="bg-white border border-gray-200 rounded-lg p-2 hover:border-blue-300 transition-colors">
               <p className="text-xs font-semibold text-gray-800 mb-1 flex items-center justify-between">
                 <span>
-                  📄 {source.source}
-                  {source.doc_id === "summary"
-                    ? <span className="ml-2 text-blue-600 font-bold">Entire Document</span>
-                    : source.page !== undefined && source.page !== null && (
-                        <span className="ml-2 text-blue-600 font-bold">Page {source.page}</span>
-                      )
-                  }
+                    📄 {displayName}
+                    {pageLabel}
                 </span>
               </p>
               <div className="bg-gray-50 rounded p-2 text-xs text-gray-600 leading-relaxed border-l-2 border-blue-400">
@@ -157,7 +163,8 @@ function SourcesDisplay({ sources }) {
                   )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -371,7 +378,37 @@ export default function ChatInterface() {
               }`}
             >
               {/* Message Content */}
-              <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+              {msg.role === 'assistant' ? (
+                <div className="prose prose-sm max-w-none">
+                  <ReactMarkdown
+                    components={{
+                      // Style markdown elements
+                      h1: ({node, ...props}) => <h1 className="text-xl font-bold mt-4 mb-2" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="text-lg font-bold mt-3 mb-2" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="text-base font-bold mt-2 mb-1" {...props} />,
+                      p: ({node, ...props}) => <p className="mb-2 leading-relaxed" {...props} />,
+                      ul: ({node, ...props}) => <ul className="list-disc ml-5 mb-2 space-y-1" {...props} />,
+                      ol: ({node, ...props}) => <ol className="list-decimal ml-5 mb-2 space-y-1" {...props} />,
+                      li: ({node, ...props}) => <li className="leading-relaxed" {...props} />,
+                      strong: ({node, ...props}) => <strong className="font-bold text-gray-900" {...props} />,
+                      em: ({node, ...props}) => <em className="italic" {...props} />,
+                      code: ({node, inline, ...props}) => 
+                        inline ? (
+                          <code className="bg-gray-200 px-1 py-0.5 rounded text-sm font-mono" {...props} />
+                        ) : (
+                          <code className="block bg-gray-800 text-green-400 p-2 rounded text-sm font-mono overflow-x-auto" {...props} />
+                        ),
+                      blockquote: ({node, ...props}) => (
+                        <blockquote className="border-l-4 border-blue-500 pl-4 italic my-2" {...props} />
+                      ),
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+              )}
 
               {/* Metadata */}
               {msg.role === 'assistant' && !msg.isError && (
