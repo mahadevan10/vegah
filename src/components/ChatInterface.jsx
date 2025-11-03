@@ -210,12 +210,34 @@ function DebugPanel({ message }) {
 }
 
 export default function ChatInterface() {
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content: 'Hi! I\'m Vegah, your intelligent agentic RAG assistant. I can reason about your documents and strategically retrieve information. Ask me anything!',
-    },
-  ]);
+  // Load messages from localStorage on mount
+  const [messages, setMessages] = useState(() => {
+    if (typeof window === 'undefined') {
+      return [
+        {
+          role: 'assistant',
+          content: 'Hi! I\'m Vegah, your intelligent agentic RAG assistant. I can reason about your documents and strategically retrieve information. Ask me anything!',
+        },
+      ];
+    }
+    
+    try {
+      const savedMessages = localStorage.getItem('vegah_chat_history');
+      if (savedMessages) {
+        return JSON.parse(savedMessages);
+      }
+    } catch (error) {
+      console.error('Failed to load chat history:', error);
+    }
+    
+    return [
+      {
+        role: 'assistant',
+        content: 'Hi! I\'m Vegah, your intelligent agentic RAG assistant. I can reason about your documents and strategically retrieve information. Ask me anything!',
+      },
+    ];
+  });
+  
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -228,6 +250,15 @@ export default function ChatInterface() {
     } catch {}
     return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   });
+  
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('vegah_chat_history', JSON.stringify(messages));
+    } catch (error) {
+      console.error('Failed to save chat history:', error);
+    }
+  }, [messages]);
 
   const messagesEndRef = useRef(null);
 
@@ -337,28 +368,46 @@ export default function ChatInterface() {
           </h2>
           <p className="text-sm opacity-90">Intelligent Document Reasoning • Agentic RAG</p>
         </div>
-        <button
-          onClick={async () => {
-            if (confirm('Delete all documents and embeddings?')) {
-              try {
-                await deleteAllEmbeddings();
-                alert('All embeddings deleted!');
-                setMessages([
-                  {
+        <div className="flex space-x-2">
+          <button
+            onClick={() => {
+              if (confirm('Clear chat history? This will only clear the conversation, not the documents.')) {
+                const initialMessage = {
+                  role: 'assistant',
+                  content: 'Hi! I\'m Vegah, your intelligent agentic RAG assistant. I can reason about your documents and strategically retrieve information. Ask me anything!',
+                };
+                setMessages([initialMessage]);
+                localStorage.setItem('vegah_chat_history', JSON.stringify([initialMessage]));
+              }
+            }}
+            className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+            type="button"
+          >
+            Clear Chat
+          </button>
+          <button
+            onClick={async () => {
+              if (confirm('Delete all documents and embeddings?')) {
+                try {
+                  await deleteAllEmbeddings();
+                  alert('All embeddings deleted!');
+                  const resetMessage = {
                     role: 'assistant',
                     content: 'All documents cleared. Upload new PDFs to get started!',
-                  },
-                ]);
-              } catch (e) {
-                alert('Failed to delete embeddings: ' + e.message);
+                  };
+                  setMessages([resetMessage]);
+                  localStorage.setItem('vegah_chat_history', JSON.stringify([resetMessage]));
+                } catch (e) {
+                  alert('Failed to delete embeddings: ' + e.message);
+                }
               }
-            }
-          }}
-          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm ml-4 transition-colors"
-          type="button"
-        >
-          Clear All
-        </button>
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+            type="button"
+          >
+            Clear All Docs
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
