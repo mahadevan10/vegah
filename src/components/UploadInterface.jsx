@@ -171,7 +171,7 @@ export default function UploadInterface({ onUploadComplete }) {
               Drop files here or click to browse
             </p>
             <p className="text-sm text-gray-500">
-              Supports: .txt, .md, .doc, .docx, .pdf
+              Supports:.pdf
             </p>
             <p className="text-xs text-gray-400 mt-2">
               Upload time: ~30-60 seconds per document
