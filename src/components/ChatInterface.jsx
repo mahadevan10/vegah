@@ -240,6 +240,8 @@ export default function ChatInterface() {
   
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const isMountedRef = useRef(true);
+  const activeRequestRef = useRef(null);
 
   // Generate stable sessionId
   const [sessionId] = useState(() => {
@@ -250,6 +252,15 @@ export default function ChatInterface() {
     } catch {}
     return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   });
+  
+  // Track component mount status
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Don't cancel the request, let it complete in background
+    };
+  }, []);
   
   // Save messages to localStorage whenever they change
   useEffect(() => {
@@ -282,8 +293,40 @@ export default function ChatInterface() {
     const startTime = Date.now();
 
     try {
+      // Store reference to this request
+      const requestPromise = queryRAG(userMessage, 5, sessionId);
+      activeRequestRef.current = requestPromise;
+      
       // Call API with sessionId
-      const response = await queryRAG(userMessage, 5, sessionId);
+      const response = await requestPromise;
+      
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) {
+        console.log('⚠️ Component unmounted, saving response to localStorage only');
+        // Still save to localStorage so it appears when user returns
+        const responseTime = Date.now() - startTime;
+        const assistantMessage = {
+          role: 'assistant',
+          content: response.answer || 'No answer generated',
+          sources: Array.isArray(response.sources) ? response.sources : [],
+          agentReasoning: Array.isArray(response.agent_reasoning) ? response.agent_reasoning : [],
+          toolsUsed: Array.isArray(response.tools_used) ? response.tools_used : [],
+          contextUsed: response.context_used,
+          responseTime: responseTime,
+        };
+        
+        // Update localStorage directly
+        try {
+          const savedMessages = JSON.parse(localStorage.getItem('vegah_chat_history') || '[]');
+          savedMessages.push(assistantMessage);
+          localStorage.setItem('vegah_chat_history', JSON.stringify(savedMessages));
+          console.log('✅ Response saved to localStorage for later viewing');
+        } catch (error) {
+          console.error('Failed to save unmounted response:', error);
+        }
+        return;
+      }
+      
       const responseTime = Date.now() - startTime;
 
       // DEBUG: Comprehensive logging
@@ -344,16 +387,36 @@ export default function ChatInterface() {
       console.error('❌ Query error:', error);
       console.error('Error details:', error.response?.data);
       
-      setMessages(prev => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: `Error: ${error.response?.data?.detail || error.message}`,
-          isError: true,
-        },
-      ]);
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setMessages(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: `Error: ${error.response?.data?.detail || error.message}`,
+            isError: true,
+          },
+        ]);
+      } else {
+        // Save error to localStorage for later viewing
+        try {
+          const savedMessages = JSON.parse(localStorage.getItem('vegah_chat_history') || '[]');
+          savedMessages.push({
+            role: 'assistant',
+            content: `Error: ${error.response?.data?.detail || error.message}`,
+            isError: true,
+          });
+          localStorage.setItem('vegah_chat_history', JSON.stringify(savedMessages));
+        } catch (storageError) {
+          console.error('Failed to save error to localStorage:', storageError);
+        }
+      }
     } finally {
-      setLoading(false);
+      // Only update loading state if component is still mounted
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
+      activeRequestRef.current = null;
     }
   };
 
