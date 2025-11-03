@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { Upload, FileText, CheckCircle, XCircle, Loader2, Trash2 } from 'lucide-react';
-import { uploadDocuments } from '../lib/api';
+import { uploadDocuments, getUploadStatus } from '../lib/api';
 
 export default function UploadInterface({ onUploadComplete }) {
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState(null); // { status, progress, message }
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
@@ -41,23 +42,81 @@ export default function UploadInterface({ onUploadComplete }) {
 
     setUploading(true);
     setResult(null);
+    setUploadStatus(null);
 
     try {
+      // Step 1: Upload files and get job_id
       const response = await uploadDocuments(files);
-      setResult({
-        success: true,
-        message: response.message,
-        filesProcessed: response.files_processed,
-        totalChunks: response.total_chunks,
+      const jobId = response.job_id;
+      
+      setUploadStatus({
+        status: 'processing',
+        message: `Processing ${files.length} document(s)...`,
+        filesProcessed: 0,
+        totalFiles: files.length,
       });
-      setFiles([]);
-      if (onUploadComplete) onUploadComplete();
+
+      // Step 2: Poll for status until complete
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusData = await getUploadStatus(jobId);
+          
+          setUploadStatus({
+            status: statusData.status,
+            message: statusData.message || 'Processing...',
+            filesProcessed: statusData.files_processed || 0,
+            totalFiles: files.length,
+            totalChunks: statusData.total_chunks,
+          });
+
+          // Check if complete or failed
+          if (statusData.status === 'completed') {
+            clearInterval(pollInterval);
+            setResult({
+              success: true,
+              message: statusData.message,
+              filesProcessed: statusData.files_processed,
+              totalChunks: statusData.total_chunks,
+            });
+            setFiles([]);
+            setUploading(false);
+            if (onUploadComplete) onUploadComplete();
+          } else if (statusData.status === 'failed') {
+            clearInterval(pollInterval);
+            setResult({
+              success: false,
+              message: statusData.error || 'Upload failed',
+            });
+            setUploading(false);
+          }
+        } catch (pollError) {
+          console.error('Status polling error:', pollError);
+          clearInterval(pollInterval);
+          setResult({
+            success: false,
+            message: 'Failed to check upload status',
+          });
+          setUploading(false);
+        }
+      }, 2000); // Poll every 2 seconds
+
+      // Timeout after 5 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (uploading) {
+          setResult({
+            success: false,
+            message: 'Upload timeout - please check documents list',
+          });
+          setUploading(false);
+        }
+      }, 300000);
+
     } catch (error) {
       setResult({
         success: false,
         message: error.response?.data?.detail || error.message,
       });
-    } finally {
       setUploading(false);
     }
   };
@@ -174,7 +233,11 @@ export default function UploadInterface({ onUploadComplete }) {
             {uploading ? (
               <>
                 <Loader2 className="w-6 h-6 animate-spin" />
-                <span>Uploading & Indexing...</span>
+                <span>
+                  {uploadStatus?.status === 'processing' 
+                    ? `Processing... (${uploadStatus.filesProcessed}/${uploadStatus.totalFiles} files)`
+                    : 'Uploading & Indexing...'}
+                </span>
               </>
             ) : (
               <>
@@ -183,6 +246,26 @@ export default function UploadInterface({ onUploadComplete }) {
               </>
             )}
           </button>
+        )}
+
+        {/* Progress Status */}
+        {uploading && uploadStatus && (
+          <div className="mt-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+              <div className="flex-1">
+                <p className="font-semibold text-blue-900">{uploadStatus.message}</p>
+                <p className="text-sm text-blue-700 mt-1">
+                  📄 Processing: {uploadStatus.filesProcessed} / {uploadStatus.totalFiles} files
+                </p>
+                {uploadStatus.totalChunks > 0 && (
+                  <p className="text-sm text-blue-700">
+                    📦 Chunks created: {uploadStatus.totalChunks}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Result Message */}
