@@ -71,7 +71,7 @@ function AgentReasoning({ reasoning, toolsUsed }) {
               <p className="text-xs font-semibold text-blue-700 mb-2 flex items-center">
                 💭 Thought Process:
               </p>
-              <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-3 space-y-2 max-h-80 overflow-y-auto">
+              <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg p-3 space-y-2 max-h-96 overflow-y-auto">
                 {reasoning.map((step, i) => {
                   // Determine icon based on step content
                   let icon = '•';
@@ -79,7 +79,7 @@ function AgentReasoning({ reasoning, toolsUsed }) {
                       step.includes('🎯') || step.includes('🌐') || step.includes('📋') ||
                       step.includes('🔧') || step.includes('✅') || step.includes('⚠️') ||
                       step.includes('❌') || step.includes('📥') || step.includes('🔄') ||
-                      step.includes('⏱️') || step.includes('💭')) {
+                      step.includes('⏱️') || step.includes('💭') || step.includes('⚡')) {
                     icon = ''; // Step already has emoji
                   } else if (step.toLowerCase().includes('error') || step.toLowerCase().includes('failed')) {
                     icon = '❌';
@@ -94,7 +94,7 @@ function AgentReasoning({ reasoning, toolsUsed }) {
                       <span className="text-blue-600 text-xs font-bold mt-0.5 flex-shrink-0 min-w-[24px]">
                         {i + 1}.
                       </span>
-                      <p className="text-xs text-gray-800 leading-relaxed flex-1">
+                      <p className="text-xs text-gray-800 leading-relaxed flex-1 whitespace-pre-wrap break-words">
                         {icon && <span className="mr-1">{icon}</span>}
                         {step}
                       </p>
@@ -447,11 +447,6 @@ export default function ChatInterface() {
               {/* Sources Display */}
               {msg.role === 'assistant' && !msg.isError && (
                 <SourcesDisplay sources={msg.sources} />
-              )}
-
-              {/* Debug Panel */}
-              {msg.role === 'assistant' && !msg.isError && (
-                <DebugPanel message={msg} />
               )}
             </div>
           </div>

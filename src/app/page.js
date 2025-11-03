@@ -110,12 +110,8 @@ export default function Home() {
               <p className="font-semibold">Vegah RAG System</p>
               <p>
                 Deployed on GCP e2-micro • Powered by NVIDIA NIM Free API<br/>
-                <span className="text-blue-700 font-semibold">Production: SambaNova Infrastructure ($81.20/mo for 60k queries)</span>
+                <span className="text-blue-700 font-semibold"></span>
               </p>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-green-600">Monthly Cost: $0 (Dev) / $81.20 (Prod)</p>
-              <p className="text-xs">Free for development, enterprise-ready with SambaNova</p>
             </div>
           </div>
         </div>
@@ -130,11 +126,11 @@ function OverviewTab() {
       {/* Hero */}
       <div className="text-center">
         <h2 className="text-4xl font-bold text-gray-900 mb-4">
-          Production-Ready RAG at $0/month
+          Low-Cost Agentic RAG System
         </h2>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Hybrid search architecture combining BM25 keyword filtering with vector semantic search, powered by NVIDIA NIM Free LLM API.<br/>
-          <span className="font-semibold text-blue-700">In production, can upgrade to SambaNova Infrastructure for enterprise scale and reliability.</span>
+          Agentic RAG system that reasons about your documents before retrieval. The agent analyzes your query, strategically decides which tools to use, and retrieves information step-by-step using LangGraph workflows.<br/>
+          <span className="font-semibold text-blue-700">Powered by NVIDIA NIM Free API for development. Can upgrade to SambaNova for production scale.</span>
         </p>
       </div>
 
@@ -171,46 +167,46 @@ function OverviewTab() {
         <h3 className="text-2xl font-bold mb-6">Key Features</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Feature
-            icon="💬"
-            title="Interactive Chat"
-            description="Ask questions and get AI-powered answers with source citations (NVIDIA NIM Free API)"
+            icon="🤖"
+            title="Agentic Reasoning"
+            description="LangGraph-powered agent that analyzes queries and strategically selects tools before retrieval"
           />
           <Feature
-            icon="📊"
-            title="Real-Time Analytics"
-            description="Track API usage, costs, and performance metrics in real-time"
+            icon="🧠"
+            title="Multi-Step Planning"
+            description="Agent breaks down complex questions and executes multi-tool workflows automatically"
           />
           <Feature
-            icon="🔍"
-            title="Hybrid Search"
-            description="BM25 + Vector search for 95% efficiency improvement"
+            icon="📄"
+            title="Smart Document Chunking"
+            description="One chunk per page with metadata tracking (page numbers, doc IDs, total pages)"
           />
           <Feature
-            icon="🔄"
-            title="Auto-Restart"
-            description="systemd service with automatic crash recovery"
+            icon="✅"
+            title="Citation Validation"
+            description="Automatic validation to prevent hallucinated page numbers in LLM responses"
           />
         </div>
       </div>
 
       {/* Architecture */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 rounded-lg shadow-lg">
-        <h3 className="text-2xl font-bold mb-6">Three-Stage Architecture</h3>
+        <h3 className="text-2xl font-bold mb-6">Agentic RAG Workflow</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Stage
             number="1"
-            title="BM25 Filtering"
-            description="Traditional keyword search filters 1000+ docs → 50 candidates"
+            title="Query Analysis"
+            description="Agent analyzes your question and decides which tools to use (search, summarize, extract, etc.)"
           />
           <Stage
             number="2"
-            title="Vector Search"
-            description="Semantic search on 50 candidates → Top 10 most relevant"
+            title="Strategic Retrieval"
+            description="Agent executes multi-step retrieval using vector search, gathering relevant context chunks"
           />
           <Stage
             number="3"
-            title="LLM Generation"
-            description="Groq Llama 3.1 8B generates accurate answer from top 10"
+            title="Answer Synthesis"
+            description="LLM generates answer with citations, validated to prevent hallucinations"
           />
         </div>
       </div>
@@ -222,7 +218,7 @@ function OverviewTab() {
           <CostItem
             service="GCP e2-micro VM (2 vCPU, 1GB RAM)"
             cost="$0.00"
-            detail="Always Free Tier"
+            detail="Need to upgrade to use better VM for production"
           />
           <CostItem
             service="SambaNova LLM Inference"
